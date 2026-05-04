@@ -878,6 +878,34 @@ def calibrate_activity_factor(cgm_df, activity_windows):
 # TIDEPOOL + MEDICATION DATA LOADING
 # ================================================================
 
+def diagnose_tidepool_fixed(fp):
+    """Повна діагностика + безпечний парсинг"""
+    if not os.path.exists(fp):
+        print("❌ Файл відсутній")
+        return
+    
+    xls = pd.ExcelFile(fp)
+    print(f"✅ {len(xls.sheet_names)} листів:", xls.sheet_names)
+    
+    data = {}
+    for sheet in xls.sheet_names:
+        if sheet == 'EXPORT ERROR': continue
+        try:
+            df = xls.parse(sheet, nrows=3)
+            print(f"\n{sheet}:")
+            print(f"  Рядків: {len(df)}, Колонок: {len(df.columns)}")
+            if len(df) > 0 and len(df.columns) > 0:
+                print(f"  Колонки: {list(df.columns)}")
+                print(f"  Приклад: {dict(df.iloc[0].dropna())}")
+            data[sheet] = df
+        except Exception as e:
+            print(f"  ❌ {e}")
+    
+    return data
+
+# Запуск
+tidepool_data = diagnose_tidepool_fixed(FILE_PATH)
+
 def load_tidepool_data(fp):
     xls = pd.ExcelFile(fp)
     def _parse(sheet, col="Device Time"):
