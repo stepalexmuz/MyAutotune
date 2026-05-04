@@ -906,6 +906,43 @@ def diagnose_tidepool_fixed(fp):
 # Запуск
 tidepool_data = diagnose_tidepool_fixed(FILE_PATH)
 
+def load_tidepool_data_safe(fp):
+    """Безпечна версія для t:slim X2"""
+    xls = pd.ExcelFile(fp)
+    
+    def safe_parse(sheet):
+        if sheet not in xls.sheet_names or sheet == 'EXPORT ERROR':
+            return pd.DataFrame()
+        try:
+            df = xls.parse(sheet)
+            # Пошук часу
+            for col in ['Device Time', 'normalTime', 'displayTime', 'Timestamp']:
+                if col in df.columns:
+                    df['Device Time'] = pd.to_datetime(df[col], errors='coerce')
+                    break
+            return df
+        except:
+            return pd.DataFrame()
+    
+    return (
+        safe_parse('Basal Schedules'),
+        safe_parse('Bolus'),
+        safe_parse('CGM'),
+        safe_parse('Carb Ratios'),
+        safe_parse('Insulin Sensitivities'),
+        safe_parse('Basal'),
+    )
+
+# Тест
+data = load_tidepool_data_safe(FILE_PATH)
+cgm, bolus, basal = data[2], data[1], data[5]
+print(f"\n✅ Дані:")
+print(f"CGM: {len(cgm)} точок")
+print(f"Bolus: {len(bolus)}")
+print(f"Basal: {len(basal)}")
+
+
+
 def load_tidepool_data(fp):
     xls = pd.ExcelFile(fp)
     def _parse(sheet, col="Device Time"):
