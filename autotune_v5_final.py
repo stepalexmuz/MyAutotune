@@ -896,6 +896,42 @@ def load_tidepool_data(fp):
         _parse("Basal"),
     )
 
+def load_tidepool_data_fixed(fp):
+    """Виправлена версія для t:slim X2"""
+    xls = pd.ExcelFile(fp)
+    
+    def _parse_safe(sheet, col="Device Time"):
+        if sheet not in xls.sheet_names or sheet == 'EXPORT ERROR':
+            return pd.DataFrame()
+        try:
+            df = xls.parse(sheet)
+            time_cols = ["Device Time", "normalTime", "displayTime", "Timestamp"]
+            for tc in time_cols:
+                if tc in df.columns:
+                    df["Device Time"] = pd.to_datetime(df[tc], errors="coerce")
+                    break
+            return df
+        except:
+            return pd.DataFrame()
+    
+    return (
+        _parse_safe("Basal Schedules"),
+        _parse_safe("Bolus"),
+        _parse_safe("CGM"), 
+        _parse_safe("Carb Ratios"),
+        _parse_safe("Insulin Sensitivities"),
+        _parse_safe("Basal"),
+    )
+
+# ТЕСТ
+basal_sch, bolus_df, cgm_df, carb_ratios, isf_df, basal_df = load_tidepool_data_fixed(FILE_PATH)
+print("✅ FIXED Tidepool:")
+print(f"  CGM: {len(cgm_df)} points")
+print(f"  Bolus: {len(bolus_df)}")
+print(f"  Basal: {len(basal_df)}")
+print("  CGM колонки:", list(cgm_df.columns)[:10])
+
+
 def load_bolus_calculator(fp):
     xls = pd.ExcelFile(fp)
     if "Bolus Calculator" not in xls.sheet_names:
